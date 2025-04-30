@@ -22,5 +22,6 @@ jobs:
 
       - name: Run tests
         run: |
+          export PYTHONPATH=$PYTHONPATH:${{ github.workspace }}
           source venv/bin/activate
           pytest
