@@ -5,6 +5,10 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+     fail-fast: false
+     matrix:
+      python-version: ["3.8","3.9","3.10","3.12"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -12,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: ${{matrix.python-version}}
 
       - name: Install dependencies
         run: |
@@ -25,3 +29,20 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:${{ github.workspace }}
           source venv/bin/activate
           pytest
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        env:
+         DOCKER_USER: ${{secrets.DOCKER_USER}}
+         DOCKER_PASS: ${{secrets.DOCKER_PASS}}
+        run: |
+         IMAGE_NAME="funduk23/myapp:${{github.sha}}"
+         docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+         docker build -t ${IMAGE_NAME} .
+         docker push ${IMAGE_NAME}
+
